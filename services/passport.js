@@ -18,22 +18,21 @@ passport.deserializeUser((id, done) => {
 
 passport.use(
     new GoogleStrategy({
-        clientID: keys.googleClientID,
-        clientSecret: keys.googleClientSecret,
-        callbackURL: '/auth/google/callback',
-        proxy: true // make it trust heroku's proxy and keep https 
-    }, (accessToken, refreshToken, profile, done) => {
-        User.findOne({ googleId: profile.id })
-            .then((existingUser) => {
-                if (existingUser) {
-                    // already have a record with the given profile ID
-                    done(null, existingUser);
-                } else {
-                    new User({ googleId: profile.id }).save()
-                        .then(user => done(null, user));
-                }
-            })
+            clientID: keys.googleClientID,
+            clientSecret: keys.googleClientSecret,
+            callbackURL: '/auth/google/callback',
+            proxy: true // make it trust heroku's proxy and keep https 
+        },
+        async (accessToken, refreshToken, profile, done) => {
+            const existingUser = await User.findOne({ googleId: profile.id });
 
-    }
+            if (existingUser) {
+                // already have a record with the given profile ID
+                done(null, existingUser);
+            }
+
+            const newUser = await new User({ googleId: profile.id }).save();
+            done(null, newUser);
+        }
     )
 );
